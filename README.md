@@ -1,2 +1,2 @@
 # bccimeusp-pmg-image-processor
-A simple pmg image processor developed for the graduation discipline "Introduction to Computer Science".
+A simple pgm image processor developed for the graduation discipline "Introduction to Computer Science".
