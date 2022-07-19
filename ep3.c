@@ -3,17 +3,7 @@
 
 /* gcc -ansi -Wall -pedantic -o ep3 ep3.c */
 
-/* OK inversão
-   OK binarização
-      contorno
-      filtragem
-   OK rotulação
-   OK leitura
-   OK salvar
-
-   !!! DAR FREE !!! */
-
-void printImage(int *image, int largura, int altura) {
+void print_image(int *image, int largura, int altura) {
     int i, j;
 
     for (i = 0; i < altura; i++) {
@@ -24,7 +14,7 @@ void printImage(int *image, int largura, int altura) {
     }
 }
 
-int *lerImagem(char *arquivo, int *largura, int *altura) {
+int *load_image_from_file(char *arquivo, int *largura, int *altura) {
     FILE *entrada;
     int i;
     int *imagem;
@@ -77,7 +67,7 @@ int *binarize(int *image, int width, int height, int limiar) {
     return imagemLimiarizada;
 }
 
-void salvarImagem(char *arquivo, int *imagem, int largura, int altura) {
+void save_image_to_file(char *arquivo, int *imagem, int largura, int altura) {
     FILE *saida;
     int i, j;
 
@@ -95,7 +85,7 @@ void salvarImagem(char *arquivo, int *imagem, int largura, int altura) {
     }
 }
 
-int *adicionaBorda(int *imagem, int largura, int altura) {
+int *add_border(int *imagem, int largura, int altura) {
     int i, j, tamanho;
     int *borda;
     tamanho = (largura + 2)*(altura+2);
@@ -125,7 +115,7 @@ int *adicionaBorda(int *imagem, int largura, int altura) {
     return borda;
 }
 
-int *removeBorda(int *imagemComBorda, int larguraSemBorda, int alturaSemBorda) {
+int *remove_border(int *imagemComBorda, int larguraSemBorda, int alturaSemBorda) {
     int i, j;
     int *semBorda;
     semBorda = malloc(sizeof(int)*larguraSemBorda*alturaSemBorda);
@@ -149,20 +139,20 @@ void substituiVizinhos(int *imagem, int linha, int coluna, int qtdComponentes, i
             if (imagem[indiceVizinho] == 255) {
                     imagem[indiceVizinho] = qtdComponentes;
 /*                     printf("\n\nLinha: %d   Coluna: %d\n", linha, coluna);
-                    printImage(imagem, 14, 5); */
+                    print_image(imagem, 14, 5); */
                     substituiVizinhos(imagem, i, j, qtdComponentes, largura);
             }
         }
     }
 }
 
-int *rotulacao(int *imagem, int largura, int altura) {
+int *label_components(int *imagem, int largura, int altura) {
     int i, j, qtdComponentes; 
     int *imagemComBorda;
     int *imagemRotulada;
 
-    imagemComBorda = adicionaBorda(imagem, largura, altura);
-/*     printImage(imagemComBorda, largura+2, altura+2); */
+    imagemComBorda = add_border(imagem, largura, altura);
+/*     print_image(imagemComBorda, largura+2, altura+2); */
 
     qtdComponentes = 1;
     for (i = 1; i < (altura+2); i++) {
@@ -174,7 +164,7 @@ int *rotulacao(int *imagem, int largura, int altura) {
         }
     }
 
-    imagemRotulada = removeBorda(imagemComBorda, largura, altura);
+    imagemRotulada = remove_border(imagemComBorda, largura, altura);
 
     free(imagemComBorda);
     imagemComBorda = NULL;
@@ -235,7 +225,7 @@ int *coletaVizinhos(int *imagem, int largura, int linha, int coluna, int valor) 
     int i, j, k;
     int *elementosVizinhos;
 
-    elementosVizinhos = malloc(sizeof(int)*(2*valor+1));
+    elementosVizinhos = malloc(sizeof(int)*(2*valor+1)*(2*valor+1));
 
     k = 0;
     for (i = linha-valor; i <= linha+valor; i++) {
@@ -248,7 +238,7 @@ int *coletaVizinhos(int *imagem, int largura, int linha, int coluna, int valor) 
     return elementosVizinhos;
 }
 
-void troca(int *a, int *b) {
+void swap(int *a, int *b) {
     int t;
 
     t = *a;
@@ -256,69 +246,99 @@ void troca(int *a, int *b) {
     *b = t;
 }
 
-void ordenaVetor(int *vetor, int tamanho) {
-    int i, pivot, indicePivot, encontrouMaior, encontrouMenor;
+void quick_sort(int *vetor, int inicio, int fim) {
+    int i, pivot, indicePivot, cont;
 
-    indicePivot = 0;
-    pivot = vetor[indicePivot];
+    if (inicio < fim) {
+        indicePivot = inicio;
+        pivot = vetor[indicePivot];
 
-    encontrouMaior = 1;
-    while (encontrouMaior || encontrouMenor) {
-        encontrouMaior = 0; encontrouMenor = 0;
-
-        for (i = tamanho-1; (!encontrouMenor && (i > indicePivot)); i--) {
-            if (vetor[i] < pivot) {
-                troca(&vetor[i], &vetor[indicePivot]);
-                indicePivot = i;
-                encontrouMenor = 1;
+        cont = 0;
+        for (i = indicePivot+1; i <= fim; i++) {
+            if (vetor[i] <= pivot) {
+                cont++;
+                swap(&vetor[i], &vetor[indicePivot+cont]);
             }
         }
+        swap(&vetor[indicePivot], &vetor[indicePivot+cont]);
+        indicePivot = indicePivot+cont;
 
-        for (i = 0; (!encontrouMaior && (i < indicePivot)); i++) {
-            if (vetor[i] > pivot) {
-                troca(&vetor[i], &vetor[indicePivot]);
-                indicePivot = i;
-                encontrouMaior = 1;
-            }
-        }
+        quick_sort(vetor, inicio, indicePivot-1);
+        quick_sort(vetor, indicePivot+1, fim);
     }
 }
 
-/* int *filtragrem(int *imagem, int largura, int altura, int dimensao, int tipo) {
-    int i, j, novaLargura, novaAltura;
+int *filter_image(int *imagem, int largura, int altura, int dimensao, int tipo) {
+    int i, j, novaLargura;
     int *imagemAlargada;
+    int *imagemFiltrada;
     int *vizinhos;
 
     novaLargura = largura + dimensao-1;
-    novaAltura = altura + dimensao -1;
+
+    imagemFiltrada = malloc(sizeof(int)*largura*altura);
 
     imagemAlargada = alargaImagem(imagem, largura, altura, dimensao/2);
 
-    for (i = 0; i < novaAltura; i++) {
-        for (j = 0; j < novaLargura; j++) {
-            vizinhos = coletaVizinhos(imagem, novaLargura, i, j, dimensao/2);
-
+    for (i = dimensao/2; i < altura+(dimensao/2); i++) {
+        for (j = dimensao/2; j < largura+(dimensao/2); j++) {
+            vizinhos = coletaVizinhos(imagemAlargada, novaLargura, i, j, dimensao/2);
+            quick_sort(vizinhos, 0, (dimensao*dimensao)-1);
+            if (tipo == 1) {
+                imagemFiltrada[(i-(dimensao/2)) * largura + (j-(dimensao/2))] = vizinhos[0];
+            }
+            else if (tipo == 2) {
+                imagemFiltrada[(i-(dimensao/2)) * largura + (j-(dimensao/2))] = vizinhos[((dimensao*dimensao)/2)];
+            }
+            else if (tipo == 3) {
+                imagemFiltrada[(i-(dimensao/2)) * largura + (j-(dimensao/2))] = vizinhos[(dimensao*dimensao)-1];
+            }
         }
     }
 
+    free(imagemAlargada);
+    imagemAlargada = NULL;
 
-} */
+    return imagemFiltrada;
+}
+
+int *contorno(int *imagem, int largura, int altura) {
+    int i, j, index;
+    int *contorno;
+    int *filtro;
+
+    filtro = filter_image(imagem, largura, altura, 3, 1);
+
+    contorno = malloc(sizeof(int)*largura*altura);
+
+    for (i = 0; i < altura; i++) {
+        for (j = 0; j < largura; j++) {
+            index = i*largura+j;
+            contorno[index] = imagem[index] - filtro[index];
+        }
+    }
+
+    free(filtro);
+    filtro = NULL;
+
+    return contorno;
+}
 
 int main ()
 {
-    int i;
-/*     int *imagem;
+/*     int i; */
+    int *imagem;
     int *imagem2;
-    int largura, altura; */
+    int largura, altura;
 
-/*     char arquivo[50];
+    char arquivo[50];
     printf("Nome do arquivo de entrada: ");
     scanf("%s", arquivo);
-    imagem = lerImagem(arquivo, &largura, &altura); */
+    imagem = load_image_from_file(arquivo, &largura, &altura);
 
 /*     printf("Nome do arquivo de entrada: ");
     printf("imagemTeste.txt\n\n");
-    imagem = lerImagem("imagemTeste.txt", &largura, &altura); */
+    imagem = load_image_from_file("imagemTeste.txt", &largura, &altura); */
 
 /*     imagem2 = invert_image(imagem, largura, altura); */
 
@@ -326,29 +346,32 @@ int main ()
 
 /*     printf("Nome do arquivo de saida INVERSÃO: ");
     scanf("%s", arquivo);
-    salvarImagem(arquivo, imagem2, largura, altura); */
+    save_image_to_file(arquivo, imagem2, largura, altura); */
 
-/*     imagem2 = rotulacao(imagem2, largura, altura); */
+/*     imagem2 = label_components(imagem2, largura, altura); */
 
 /*     imagem2 = alargaImagem(imagem, largura, altura, 2); */
 
-    int imagem[8] = {3, 5, 6, 4, 2, 3, 6, 1};
-    ordenaVetor(imagem, 8);
+    imagem2 = contorno(imagem, largura, altura);
     printf("----------- IMAGEM FINAL -----------\n");
-/*     printImage(imagem, 1, 1); */
+/*     print_image(imagem2, largura, altura); */
+
+/*     int imagem[8] = {3, 5, 6, 4, 2, 3, 6, 1};
+    quick_sort(imagem, 0, 7);
+    printf("----------- IMAGEM FINAL -----------\n");
 
     for (i = 0; i < 8; i++) {
         printf("%d ", imagem[i]);
     }
-    printf("\n");
+    printf("\n"); */
 
 /*     printf("Nome do arquivo de saida ROTULARIZAÇÃO: ");
     scanf("%s", arquivo);
-    salvarImagem(arquivo, imagem2, largura, altura); */
+    save_image_to_file(arquivo, imagem2, largura, altura); */
 
-/*     printf("Nome do arquivo de saida: ");
-    printf("resultado_rot.pgm.txt\n\n");
-    salvarImagem("resultado_rot.pgm.txt", imagem2, largura, altura); */
+    printf("Nome do arquivo de saida: ");
+    printf("resultado.pgm.txt\n\n");
+    save_image_to_file("resultado.pgm", imagem2, largura, altura);
 
     return 0;
 }
