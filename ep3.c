@@ -101,7 +101,7 @@ int *adicionaBorda(int *imagem, int largura, int altura) {
     tamanho = (largura + 2)*(altura+2);
     borda = malloc(sizeof(int)*tamanho);
 
-    for (i = 0; i < (largura + 2); i++) {
+/*     for (i = 0; i < (largura + 2); i++) {
         borda[i] = 0;
         borda[tamanho -1 - i] = 0;
     }
@@ -109,12 +109,17 @@ int *adicionaBorda(int *imagem, int largura, int altura) {
     for (i = 1; i <= altura; i++) {
         borda[i*(largura+2)] = 0;
         borda[i*(largura+2)+(largura+1)] = 0;
-    }
+    } */
 
     for (i = 0; i < altura; i++) {
-        for (j = 0; j< largura; j++) {
+        for (j = 0; j < largura; j++) {
             borda[(i+1)*(largura+2)+(j+1)] = imagem[i*largura+j];
         }
+        borda[i] = 0;
+        borda[tamanho -1 - i] = 0;
+
+        borda[(i+1)*(largura+2)] = 0;
+        borda[(i+1)*(largura+2)+(largura+1)] = 0;
     }
 
     return borda;
@@ -185,23 +190,137 @@ int *rotulacao(int *imagem, int largura, int altura) {
     return imagemRotulada;
 }
 
+int *alargaImagem(int *imagem, int largura, int altura, int valor) {
+    int i, j, tamanho, novaLargura, novaAltura;
+    int *imagemAlargada;
+
+    novaLargura = largura + 2*valor;
+    novaAltura = altura + 2*valor;
+    tamanho = (novaLargura)*(altura + 2*valor);
+    imagemAlargada = malloc(sizeof(int)*tamanho);
+
+    for (i = 0; i < valor; i++) {      /* copia as linhas superiores e inferiores */
+        for (j = valor; j < (largura + valor); j++) {
+            imagemAlargada[i*novaLargura+j] = imagem[j-valor];
+            imagemAlargada[(novaAltura-1-i)*novaLargura+j] = imagem[(altura-1)*largura + (j-valor)];
+        }
+    }
+
+    for (i = valor; i < (altura + valor); i++) {      /* copia as colunas a direita e a esquerda */
+        for (j = 0; j < valor; j++) {
+            imagemAlargada[i*novaLargura+j] = imagem[(i-valor)*largura];
+            imagemAlargada[i*novaLargura+(novaLargura-1-j)] = imagem[(i-valor)*largura+(largura-1)];
+        }
+    }
+
+    for (i = 0; i < valor; i++) {      /* copia os cantos */
+        for (j = 0; j < valor; j++) {
+            imagemAlargada[i*novaLargura+j] = imagem[0];      /* canto superior esquerdo */
+            imagemAlargada[i*novaLargura+(novaLargura-1-j)] = imagem[largura-1];      /* canto superior direito */
+            imagemAlargada[(novaAltura-1-i)*novaLargura+j] = imagem[(altura-1)*largura];      /* canto inferior esquerdo */
+            imagemAlargada[(novaAltura-1-i)*novaLargura+(novaLargura-1-j)] = imagem[(altura-1)*largura+(largura-1)];      /* canto inferior direito */
+        }
+    }
+
+    for (i = 0; i < altura; i++) {      /* copia o conteudo da matriz */
+        for (j = 0; j < largura; j++) {
+            imagemAlargada[(i+valor)*novaLargura + (j+valor)] = imagem[i*largura+j];
+        }
+    }
+
+    return imagemAlargada;
+}
+
+int *coletaVizinhos(int *imagem, int largura, int linha, int coluna, int valor) {
+    int i, j, k;
+    int *elementosVizinhos;
+
+    elementosVizinhos = malloc(sizeof(int)*(2*valor+1));
+
+    k = 0;
+    for (i = linha-valor; i <= linha+valor; i++) {
+        for (j = coluna-valor; j <= coluna+valor; j++) {
+            elementosVizinhos[k] = imagem[i*largura+j];
+            k++;
+        }
+    }
+
+    return elementosVizinhos;
+}
+
+void troca(int *a, int *b) {
+    int t;
+
+    t = *a;
+    *a = *b;
+    *b = t;
+}
+
+void ordenaVetor(int *vetor, int tamanho) {
+    int i, pivot, indicePivot, encontrouMaior, encontrouMenor;
+
+    indicePivot = 0;
+    pivot = vetor[indicePivot];
+
+    encontrouMaior = 1;
+    while (encontrouMaior || encontrouMenor) {
+        encontrouMaior = 0; encontrouMenor = 0;
+
+        for (i = tamanho-1; (!encontrouMenor && (i > indicePivot)); i--) {
+            if (vetor[i] < pivot) {
+                troca(&vetor[i], &vetor[indicePivot]);
+                indicePivot = i;
+                encontrouMenor = 1;
+            }
+        }
+
+        for (i = 0; (!encontrouMaior && (i < indicePivot)); i++) {
+            if (vetor[i] > pivot) {
+                troca(&vetor[i], &vetor[indicePivot]);
+                indicePivot = i;
+                encontrouMaior = 1;
+            }
+        }
+    }
+}
+
+/* int *filtragrem(int *imagem, int largura, int altura, int dimensao, int tipo) {
+    int i, j, novaLargura, novaAltura;
+    int *imagemAlargada;
+    int *vizinhos;
+
+    novaLargura = largura + dimensao-1;
+    novaAltura = altura + dimensao -1;
+
+    imagemAlargada = alargaImagem(imagem, largura, altura, dimensao/2);
+
+    for (i = 0; i < novaAltura; i++) {
+        for (j = 0; j < novaLargura; j++) {
+            vizinhos = coletaVizinhos(imagem, novaLargura, i, j, dimensao/2);
+
+        }
+    }
+
+
+} */
+
 int main ()
 {
-    char arquivo[50];
-    int *imagem;
+    int i;
+/*     int *imagem;
     int *imagem2;
-    int largura, altura;
+    int largura, altura; */
 
+/*     char arquivo[50];
     printf("Nome do arquivo de entrada: ");
     scanf("%s", arquivo);
-
-    imagem = lerImagem(arquivo, &largura, &altura);
+    imagem = lerImagem(arquivo, &largura, &altura); */
 
 /*     printf("Nome do arquivo de entrada: ");
     printf("imagemTeste.txt\n\n");
     imagem = lerImagem("imagemTeste.txt", &largura, &altura); */
 
-    imagem2 = invert_image(imagem, largura, altura);
+/*     imagem2 = invert_image(imagem, largura, altura); */
 
 /*     imagem2 = binarize(imagem, largura, altura, 127); */
 
@@ -209,14 +328,23 @@ int main ()
     scanf("%s", arquivo);
     salvarImagem(arquivo, imagem2, largura, altura); */
 
-    imagem2 = rotulacao(imagem2, largura, altura);
+/*     imagem2 = rotulacao(imagem2, largura, altura); */
 
+/*     imagem2 = alargaImagem(imagem, largura, altura, 2); */
+
+    int imagem[8] = {3, 5, 6, 4, 2, 3, 6, 1};
+    ordenaVetor(imagem, 8);
     printf("----------- IMAGEM FINAL -----------\n");
-    printImage(imagem2, largura, altura);
+/*     printImage(imagem, 1, 1); */
 
-    printf("Nome do arquivo de saida ROTULARIZAÇÃO: ");
+    for (i = 0; i < 8; i++) {
+        printf("%d ", imagem[i]);
+    }
+    printf("\n");
+
+/*     printf("Nome do arquivo de saida ROTULARIZAÇÃO: ");
     scanf("%s", arquivo);
-    salvarImagem(arquivo, imagem2, largura, altura);
+    salvarImagem(arquivo, imagem2, largura, altura); */
 
 /*     printf("Nome do arquivo de saida: ");
     printf("resultado_rot.pgm.txt\n\n");
